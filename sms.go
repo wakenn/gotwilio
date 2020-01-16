@@ -3,8 +3,10 @@ package gotwilio
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
+	"sort"
 	"time"
 )
 
@@ -40,8 +42,9 @@ func (sms *SmsResponse) DateUpdateAsTime() (time.Time, error) {
 
 // DateSentAsTime returns SmsResponse.DateSent as a time.Time object
 // instead of a string.
-func (sms *SmsResponse) DateSentAsTime() (time.Time, error) {
-	return time.Parse(time.RFC1123Z, sms.DateSent)
+func (sms *SmsResponse) DateSentAsTime() time.Time {
+	out, _ := time.Parse(time.RFC1123Z, sms.DateSent)
+	return out
 }
 
 func whatsapp(phone string) string {
@@ -140,6 +143,86 @@ func (twilio *Twilio) sendMessage(formValues url.Values) (smsResponse *SmsRespon
 	smsResponse = new(SmsResponse)
 	err = json.Unmarshal(responseBody, smsResponse)
 	return smsResponse, exception, err
+}
+
+func (twilio *Twilio) GetConversation(to, from, createdOnOrBefore, createdAfter string) ([]*SmsResponse, *Exception, error) {
+	convo := []*SmsResponse{}
+	inbound, exc, err := twilio.GetMessages(to, from, createdOnOrBefore, createdAfter)
+	if exc != nil || err != nil {
+		return nil, exc, err
+	}
+	convo = append(convo, inbound...)
+
+	outbound, exc, err := twilio.GetMessages(from, to, createdOnOrBefore, createdAfter)
+	if exc != nil || err != nil {
+		return nil, exc, err
+	}
+
+	convo = append(convo, outbound...)
+
+	sort.Slice(convo, func(i int, j int) bool {
+		return convo[i].DateSentAsTime().Unix() < convo[j].DateSentAsTime().Unix()
+	})
+
+	return convo, nil, nil
+
+}
+func (twilio *Twilio) GetMessages(to, from, createdOnOrBefore, createdAfter string) ([]*SmsResponse, *Exception, error) {
+	values := url.Values{}
+	if to != "" {
+		values.Set("To", to)
+	}
+	if from != "" {
+		values.Set("From", from)
+	}
+	if createdOnOrBefore != "" {
+		values.Set("DateCreatedOnOrBefore", createdOnOrBefore)
+	}
+	if createdAfter != "" {
+		values.Set("DateCreatedAfter", createdAfter)
+	}
+
+	values.Set("PageSize", "1000")
+
+	twilioUrl := twilio.BaseUrl + "/Accounts/" + twilio.AccountSid + "/Messages.json"
+
+	// Retrieve all messages FROM the host to the client
+	var (
+		url *url.URL
+		err error
+	)
+	if url, err = url.Parse(twilioUrl); err != nil {
+		return nil, nil, err
+	}
+	url.RawQuery = values.Encode()
+
+	log.Println("TEST", url.String())
+	resp, err := twilio.get(url.String())
+	if err != nil {
+		return nil, nil, err
+	}
+	respBody, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, nil, err
+	}
+	if resp.StatusCode != http.StatusOK {
+		exc := new(Exception)
+		err = json.Unmarshal(respBody, exc)
+		return nil, exc, err
+	}
+
+	lr := twilio.newListResources()
+	if err := json.Unmarshal(respBody, lr); err != nil {
+		return nil, nil, err
+	}
+	frs := lr.Messages
+	for lr.hasNext() {
+		if exc, err := lr.next(); exc != nil || err != nil {
+			return nil, exc, err
+		}
+		frs = append(frs, lr.Messages...)
+	}
+	return frs, nil, nil
 }
 
 // Form values initialization
