@@ -3,10 +3,10 @@ package gotwilio
 import (
 	"encoding/json"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/url"
 	"sort"
+	"strings"
 	"time"
 )
 
@@ -20,6 +20,7 @@ type SmsResponse struct {
 	To          string  `json:"to"`
 	From        string  `json:"from"`
 	MediaUrl    string  `json:"media_url"`
+	NumMedia    string  `json:"num_media"`
 	Body        string  `json:"body"`
 	Status      string  `json:"status"`
 	Direction   string  `json:"direction"`
@@ -45,6 +46,14 @@ func (sms *SmsResponse) DateUpdateAsTime() (time.Time, error) {
 func (sms *SmsResponse) DateSentAsTime() time.Time {
 	out, _ := time.Parse(time.RFC1123Z, sms.DateSent)
 	return out
+}
+
+func (sms *SmsResponse) IsMMS() bool {
+	return sms.NumMedia != "0"
+}
+
+func (sms *SmsResponse) IsInbound() bool {
+	return strings.Contains(sms.Direction, "inbound")
 }
 
 func whatsapp(phone string) string {
@@ -196,7 +205,6 @@ func (twilio *Twilio) GetMessages(to, from, createdOnOrBefore, createdAfter stri
 	}
 	url.RawQuery = values.Encode()
 
-	log.Println("TEST", url.String())
 	resp, err := twilio.get(url.String())
 	if err != nil {
 		return nil, nil, err
