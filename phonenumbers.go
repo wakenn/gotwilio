@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/google/go-querystring/query"
 )
@@ -57,22 +58,28 @@ func (o AvailablePhoneNumbersOptions) ToQueryString() (url.Values, error) {
 // AvailablePhoneNumber represents a Twilio phone number available for purchase
 // https://www.twilio.com/docs/phone-numbers/api/availablephonenumber-resource
 type AvailablePhoneNumber struct {
-	FriendlyName string  `json:"friendly_name"`
-	PhoneNumber  string  `json:"phone_number"`
-	LATA         string  `json:"lata"`
-	RateCenter   string  `json:"rate_center"`
-	Region       string  `json:"region"`
-	Locality     string  `json:"locality"`
-	Latitude     float64 `json:"latitude"`
-	Longitude    float64 `json:"longitude"`
-	PostalCode   string  `json:"postal_code"`
-	Beta         bool    `json:"beta"`
+	FriendlyName string `json:"friendly_name"`
+	PhoneNumber  string `json:"phone_number"`
+	LATA         string `json:"lata"`
+	RateCenter   string `json:"rate_center"`
+	Region       string `json:"region"`
+	Locality     string `json:"locality"`
+	Latitude     string `json:"latitude"`
+	Longitude    string `json:"longitude"`
+	PostalCode   string `json:"postal_code"`
+	Beta         bool   `json:"beta"`
 
 	Capabilities struct {
 		MMS   bool `json:"mms"`
 		SMS   bool `json:"sms"`
 		Voice bool `json:"voice"`
 	} `json:"capabilities"`
+}
+
+func (ap *AvailablePhoneNumber) GetLatLong() (float64, float64) {
+	lat, _ := strconv.ParseFloat(ap.Latitude, 64)
+	lng, _ := strconv.ParseFloat(ap.Longitude, 64)
+	return lat, lng
 }
 
 // GetAvailablePhoneNumbers retrieves list of available phone numbers
@@ -117,6 +124,12 @@ func (twilio *Twilio) GetAvailablePhoneNumbers(numberType PhoneNumberType, count
 
 // IncomingPhoneNumber represents a phone number resource owned by the calling account in Twilio
 type IncomingPhoneNumber struct {
+	Region     string  `json:"region"`
+	Locality   string  `json:"locality"`
+	Latitude   float64 `json:"latitude"`
+	Longitude  float64 `json:"longitude"`
+	PostalCode string  `json:"postal_code"`
+
 	SID          string `json:"sid"`
 	PhoneNumber  string `url:",omitempty" json:"phone_number"`
 	AreaCode     string `url:",omitempty"`
