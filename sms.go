@@ -3,9 +3,11 @@ package gotwilio
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"net/url"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -21,6 +23,7 @@ type SmsResponse struct {
 	From         string  `json:"from"`
 	MediaUrl     string  `json:"media_url"`
 	NumMedia     string  `json:"num_media"`
+	NumSegments  string  `json:"num_segments"`
 	Body         string  `json:"body"`
 	Status       string  `json:"status"`
 	Direction    string  `json:"direction"`
@@ -52,6 +55,20 @@ func (sms *SmsResponse) DateSentAsTime() time.Time {
 
 func (sms *SmsResponse) IsMMS() bool {
 	return sms.NumMedia != "0"
+}
+
+func (sms *SmsResponse) GetSegments() int {
+	if sms.NumSegments == "" || sms.NumSegments == "1" {
+		return 1
+	}
+
+	val, err := strconv.Atoi(sms.NumSegments)
+	if err != nil {
+		log.Println("Error getting num segments", sms.Sid, sms.NumSegments)
+		return 1
+	}
+
+	return val
 }
 
 func (sms *SmsResponse) IsInbound() bool {
