@@ -213,6 +213,7 @@ func (twilio *Twilio) GetMessages(to, from, createdOnOrBefore, createdAfter stri
 	values.Set("PageSize", "1000")
 
 	twilioUrl := twilio.BaseUrl + "/Accounts/" + twilio.AccountSid + "/Messages.json"
+	log.Println("Pinging", twilioUrl)
 
 	// Retrieve all messages FROM the host to the client
 	var (
