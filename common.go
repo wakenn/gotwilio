@@ -37,7 +37,7 @@ func (l *ListResources) hasNext() bool {
 func (l *ListResources) next() (*Exception, error) {
 	uri := l.NextPageUri
 	if !strings.HasPrefix("http", l.NextPageUri) {
-		uri = baseURL + l.NextPageUri
+		uri = "https://api.twilio.com" + l.NextPageUri
 	}
 	log.Println("Nexting", uri)
 	resp, err := l.t.get(uri)
