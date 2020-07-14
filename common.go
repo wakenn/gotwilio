@@ -34,8 +34,12 @@ func (l *ListResources) hasNext() bool {
 }
 
 func (l *ListResources) next() (*Exception, error) {
-	log.Println("NEXT!", l.NextPageUri)
-	resp, err := l.t.get(l.NextPageUri)
+	uri := l.NextPageUri
+	if !strings.StartsWith("http", l.NextPageUri) {
+		uri = baseUrl + l.NextPageUri
+	}
+	log.Println("Nexting", uri)
+	resp, err := l.t.get(uri)
 	if err != nil {
 		return nil, err
 	}
