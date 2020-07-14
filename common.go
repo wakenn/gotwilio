@@ -3,8 +3,9 @@ package gotwilio
 import (
 	"encoding/json"
 	"io/ioutil"
-	"net/http"
 	"log"
+	"net/http"
+	"strings"
 )
 
 // ListResources contains Twilio paging information.
@@ -35,8 +36,8 @@ func (l *ListResources) hasNext() bool {
 
 func (l *ListResources) next() (*Exception, error) {
 	uri := l.NextPageUri
-	if !strings.StartsWith("http", l.NextPageUri) {
-		uri = baseUrl + l.NextPageUri
+	if !strings.HasPrefix("http", l.NextPageUri) {
+		uri = baseURL + l.NextPageUri
 	}
 	log.Println("Nexting", uri)
 	resp, err := l.t.get(uri)
