@@ -224,8 +224,6 @@ func (twilio *Twilio) GetMessages(to, from, createdOnOrBefore, createdAfter stri
 	}
 	url.RawQuery = values.Encode()
 
-	log.Println("Pinging", url.String())
-
 	resp, err := twilio.get(url.String())
 	if err != nil {
 		return nil, nil, err
@@ -246,12 +244,38 @@ func (twilio *Twilio) GetMessages(to, from, createdOnOrBefore, createdAfter stri
 		return nil, nil, err
 	}
 	frs := lr.Messages
-	for lr.hasNext() {
-		if exc, err := lr.next(); exc != nil || err != nil {
+	log.Println("FIRST TO MSGS", url.String(), len(lr.Messages))
+
+	for {
+		if lr.NextPageUri == "" {
+			break
+		}
+
+		uri := "https://api.twilio.com" + lr.NextPageUri
+		resp, err := twilio.get(uri)
+		if err != nil {
+			return nil, nil, err
+		}
+		respBody, err := ioutil.ReadAll(resp.Body)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			exc := new(Exception)
+			err = json.Unmarshal(respBody, exc)
 			return nil, exc, err
 		}
+
+		lr = twilio.newListResources()
+		if err := json.Unmarshal(respBody, lr); err != nil {
+			return nil, nil, err
+		}
+
+		log.Println("NEXT: URI TO MSGS", uri, len(lr.Messages))
 		frs = append(frs, lr.Messages...)
 	}
+
 	return frs, nil, nil
 }
 
