@@ -33,6 +33,7 @@ func (l *ListResources) hasNext() bool {
 }
 
 func (l *ListResources) next() (*Exception, error) {
+	log.Println("NEXT!", l.NextPageUri)
 	resp, err := l.t.get(l.NextPageUri)
 	if err != nil {
 		return nil, err

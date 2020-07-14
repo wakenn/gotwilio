@@ -235,7 +235,6 @@ func (twilio *Twilio) GetMessages(to, from, createdOnOrBefore, createdAfter stri
 		return nil, nil, err
 	}
 
-	log.Println("Fill body", string(respBody))
 	if resp.StatusCode != http.StatusOK {
 		exc := new(Exception)
 		err = json.Unmarshal(respBody, exc)
