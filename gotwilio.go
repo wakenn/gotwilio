@@ -62,6 +62,10 @@ func NewTwilioClient(accountSid, authToken string) *Twilio {
 	return NewTwilioClientCustomHTTP(accountSid, authToken, nil)
 }
 
+func (twilio *Twilio) Name() string {
+	return "twilio"
+}
+
 // Create a new Twilio client, optionally using a custom http.Client
 func NewTwilioClientCustomHTTP(accountSid, authToken string, HTTPClient *http.Client) *Twilio {
 	if HTTPClient == nil {
